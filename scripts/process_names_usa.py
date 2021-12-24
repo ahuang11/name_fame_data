@@ -21,8 +21,10 @@ FILE_SPECS = {
 
 def process_web_zip(out_file, url, columns, ordering):
     df_list = []
-    os.makedirs(os.path.join("..", "data"), exist_ok=True)
-    out_path = os.path.join("..", "data", out_file)
+    scripts_dir = os.path.dirname(os.path.realpath(__file__))
+    data_dir = os.path.join(script_dir, "..", "data")
+    os.makedirs(data_dir, exist_ok=True)
+    out_path = os.path.join(data_dir, out_file)
     with urlopen(url) as in_file:  # retrieve zip
         with BytesIO(in_file.read()) as buf:  # write to memory
             with ZipFile(buf) as zip_file:  # extract zip
