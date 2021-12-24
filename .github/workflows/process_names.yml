@@ -1,9 +1,8 @@
 name: process-names
 
 on:
-  push
-  # schedule:
-  #   - cron: '0 0 1 1 0' # runs at 12:00 UTC everyday
+  schedule:
+    - cron: '0 0 1 1 0' # runs at 12:00 UTC everyday
 
 jobs:
   build:
