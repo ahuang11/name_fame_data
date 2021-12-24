@@ -1,15 +1,15 @@
-import os
 import datetime
+import os
+import sqlite3
 from io import BytesIO
 from urllib.request import urlopen
 from zipfile import ZipFile
 
-import sqlite3
 import pandas as pd
 
 SPECS = {
     "url": "https://www.ssa.gov/oact/babynames/state/namesbystate.zip",
-    "columns": ["state", "gender", "year", "name", "count"]
+    "columns": ["state", "gender", "year", "name", "count"],
 }
 
 
@@ -37,7 +37,9 @@ def process_web_zip(url, columns):
     # create a database with just the names + stats
     print("computing stats")
     stat_list = []
-    stat_list.append(df.groupby("name")["gender"].agg(pd.Series.mode).rename("top_gender"))
+    stat_list.append(
+        df.groupby("name")["gender"].agg(pd.Series.mode).rename("top_gender")
+    )
     stat_list.append(df.groupby("name")["count"].sum().rename("total_count"))
     for offset in [3, 5, 10, 25, 50, 100]:
         stat_list.append(
@@ -47,7 +49,7 @@ def process_web_zip(url, columns):
             .rename(f"max_count_{offset}_years")
         )
 
-    stat_db = os.path.join(data_dir, 'names_stats.db')
+    stat_db = os.path.join(data_dir, "names_stats.db")
     print(f"exporting {stat_db}")
     if os.path.exists(stat_db):
         print(f"removing {stat_db}")
@@ -59,7 +61,7 @@ def process_web_zip(url, columns):
 
     # shard by starting letter
     for char in concat_df["name"].str[0].unique():
-        char_db = os.path.join(data_dir, f'{char}_names_recs.db'.lower())
+        char_db = os.path.join(data_dir, f"{char}_names_recs.db".lower())
         if os.path.exists(stat_db):
             print(f"removing {char_db}")
             os.remove(char_db)
