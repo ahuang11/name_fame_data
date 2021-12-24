@@ -22,7 +22,7 @@ FILE_SPECS = {
 def process_web_zip(out_file, url, columns, ordering):
     df_list = []
     scripts_dir = os.path.dirname(os.path.realpath(__file__))
-    data_dir = os.path.join(script_dir, "..", "data")
+    data_dir = os.path.join(scripts_dir, "..", "data")
     os.makedirs(data_dir, exist_ok=True)
     out_path = os.path.join(data_dir, out_file)
     with urlopen(url) as in_file:  # retrieve zip
