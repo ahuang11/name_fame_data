@@ -62,7 +62,7 @@ def process_web_zip(url, columns):
     # shard by starting letter
     for char in concat_df["name"].str[0].unique():
         char_db = os.path.join(data_dir, f"{char}_names_recs.db".lower())
-        if os.path.exists(stat_db):
+        if os.path.exists(char_db):
             print(f"removing {char_db}")
             os.remove(char_db)
         print(f"exporting {char_db}")
