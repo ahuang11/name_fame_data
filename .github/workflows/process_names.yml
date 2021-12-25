@@ -2,7 +2,7 @@ name: process-names
 
 on:
   schedule:
-    - cron: '0 0 1 1 0' # runs at 12:00 UTC everyday
+    - cron: '0 0 1 6 *' # runs on Jun 1 every year
 
 jobs:
   build:
