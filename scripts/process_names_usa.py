@@ -53,11 +53,16 @@ class BabyNames:
                             df = pd.read_csv(txt_data, header=None, names=columns)
                             df_list.append(df)  # append to list
         df = pd.concat(df_list)  # combine
+
         return df.sort_values("year")
-        
+
     @staticmethod
     def _get_count(name_groupby):
         return name_groupby["count"].sum()
+
+    @staticmethod
+    def _get_gender(df, gender):
+        return df.loc[df["gender"] == gender]
 
     @staticmethod
     def _flatten_list(series):
@@ -67,24 +72,52 @@ class BabyNames:
     def _get_mode(name_groupby, col):
         return name_groupby[col].agg(pd.Series.mode)
 
+    @staticmethod
+    def _get_rank(series):
+        return series.rank(method="dense", ascending=False)
+
     @property
-    def total_count(self):
+    def overall_count(self):
         return self._get_count(self._name_groupby)
 
     @property
-    def total_rank(self):
-        return self.total_count.rank(method="dense", ascending=False)
+    def overall_male_rank(self):
+        return self._get_rank(
+            self._get_count(self._get_gender(self._df, "M").groupby("name"))
+        )
+
+    @property
+    def overall_female_rank(self):
+        return self._get_rank(
+            self._get_count(self._get_gender(self._df, "M").groupby("name"))
+        )
 
     @property
     def latest_count(self):
         return self._get_count(self._latest_df.groupby("name"))
 
     @property
-    def latest_rank(self):
-        return self.latest_count.rank(method="dense", ascending=False)
+    def latest_male_rank(self):
+        return self._get_rank(
+            self._get_count(
+                self._get_gender(
+                    self._df.loc[self._df["year"] == self._latest_year], "M"
+                ).groupby("name")
+            )
+        )
 
     @property
-    def latest_diff(self):
+    def latest_female_rank(self):
+        return self._get_rank(
+            self._get_count(
+                self._get_gender(
+                    self._df.loc[self._df["year"] == self._latest_year], "F"
+                ).groupby("name")
+            )
+        )
+
+    @property
+    def latest_change(self):
         return (
             self._previous_df.groupby("name")["count"]
             .diff()
@@ -95,7 +128,7 @@ class BabyNames:
         )
 
     @property
-    def latest_change(self):
+    def latest_percent_change(self):
         return (
             self._previous_df.groupby("name")["count"]
             .pct_change()
@@ -106,7 +139,7 @@ class BabyNames:
         ) * 100
 
     @property
-    def latest_trend(self):
+    def recent_trend(self):
         return (
             self._recent_df.groupby("name")["count"]
             .rolling(3)
@@ -121,13 +154,12 @@ class BabyNames:
     @property
     def percent_male(self):
         return (
-            self._get_count(self._df.loc[self._df["gender"] == "M"].groupby("name"))
-            / self.total_count
+            self._get_count(self._get_gender(self._df, "M")) / self.overall_count
         ) * 100
 
     @property
     def percent_female(self):
-        return 100 - self.percent_male.fillna(0)
+        return 100 - self.percent_male.fillna(0).astype(int)
 
     @property
     def top_gender(self):
@@ -142,8 +174,12 @@ class BabyNames:
         return self._this_year - self._name_groupby["year"].median()
 
     @property
+    def average_year(self):
+        return self._name_groupby["year"].mean()
+
+    @property
     def average_age(self):
-        return self._this_year - self._name_groupby["year"].mean()
+        return self._this_year - self.average_year
 
     @property
     def first_appearance(self):
@@ -165,8 +201,13 @@ class BabyNames:
             axis=1,
         )
         df = df.fillna(0)
-        number_cols = df.select_dtypes(np.number).columns
-        df[number_cols] = df[number_cols].astype(int)
+        number_cols = list(df.select_dtypes(np.number).columns)
+        number_cols.remove("overall_count")  # too big of a number
+        number_cols.remove("latest_count")  # too big of a number
+        df[number_cols] = df[number_cols].astype(np.int16)
+        df[["overall_count", "latest_count"]] = df[
+            ["latest_count", "overall_count"]
+        ].astype(int)
         return df
 
     def export(self):
@@ -193,7 +234,7 @@ class BabyNames:
                 os.remove(char_db)
             print(f"exporting {char_db}")
             char_conn = sqlite3.connect(char_db)
-            char_df = self._df.loc[df["name"].str.startswith(char)]
+            char_df = self._df.loc[self._df["name"].str.startswith(char)]
             char_df.set_index("name").to_sql("names", char_conn)
             char_conn.execute("CREATE INDEX name ON names(name)")
 
